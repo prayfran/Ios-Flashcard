@@ -108,6 +108,7 @@ class ViewController: UIViewController {
             write += ":"
             write += side2.text!
             view.save(fileName:fileName, writeString:write)
+            view.save(fileName:"files", writeString:fileName)
             
         } else if sender === Quit{
             let file = "transfer"

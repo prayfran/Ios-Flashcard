@@ -144,7 +144,17 @@ class ListStudy: UIViewController {
         ListType.layer.borderColor = UIColor.black.cgColor
         currentPlace = load(fileName: "transfer")
         content = load(fileName: currentPlace[1].components(separatedBy: ":")[0])
-        print(content)
+
+        if content[Int(currentPlace[1].components(separatedBy: ":")[1])!].components(separatedBy: ":").count < 3{
+            
+            var temp = currentPlace
+            currentPlace[1] = temp[1].components(separatedBy: ":")[0]
+            currentPlace[1] += ":"
+            currentPlace[1] += String(Int(temp[1].components(separatedBy: ":")[1])!)
+            content = load(fileName: temp[1].components(separatedBy: ":")[0])
+            save(fileName: "transfer", writeString: currentPlace[1])
+
+        }
         items = content[Int(currentPlace[1].components(separatedBy: ":")[1])!].components(separatedBy: ":")[2].components(separatedBy: ",").count
         update(number: items)
         
@@ -161,7 +171,6 @@ class ListStudy: UIViewController {
         backgroundImageView.alpha = 0.5
         
         self.view.insertSubview(backgroundImageView, at: 0)
-        print(items)
         if content[Int(currentPlace[1].components(separatedBy: ":")[1])!].components(separatedBy: ":")[0] == "ul"{
             ListType.text = "Unordered"}else{
             ListType.text = "Ordered"
@@ -189,14 +198,13 @@ class ListStudy: UIViewController {
         }else{
         var pass = "f:"
         pass += currentPlace[1]
-        print(pass)
+            
         save(fileName: "transfer", writeString: pass)
         back.sendActions(for: .touchUpInside)
             }
         }else{
             var pass = "f:"
             pass += currentPlace[1]
-            print(pass)
             save(fileName: "transfer", writeString: pass)
             back.sendActions(for: .touchUpInside)
         }
@@ -450,7 +458,6 @@ class ListStudy: UIViewController {
         let file = fileName
         let DocumentDirURL = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create:true)
         let fileURL = DocumentDirURL.appendingPathComponent(file).appendingPathExtension("txt")
-        print(fileURL)
         var s = "\n"
         s+=writeString
         try! s.write(to: fileURL, atomically: false, encoding: String.Encoding.utf8)

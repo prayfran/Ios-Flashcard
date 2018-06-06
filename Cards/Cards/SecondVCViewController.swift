@@ -8,9 +8,21 @@
 
 import UIKit
 
+extension Array where Element: Equatable {
+    mutating func removeDuplicates() {
+        var result = [Element]()
+        for value in self {
+            if !result.contains(value) {
+                result.append(value)
+            }
+        }
+        self = result
+    }
+}
 
-
-class SecondVCViewController: UIViewController {
+class SecondVCViewController: UIViewController, UIPickerViewDataSource, UIPickerViewDelegate{
+    var dataObject : [String] = []
+    
 
     @IBOutlet weak var Quit: UIButton!
     @IBOutlet weak var Module: UITextField!
@@ -33,6 +45,9 @@ class SecondVCViewController: UIViewController {
     var cardcount = 1
     override func viewDidLoad() {
         super.viewDidLoad()
+        dataObject = self.load(fileName: "files");
+        dataObject.removeDuplicates()
+        //print(dataObject)
         let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as String
         let url = NSURL(fileURLWithPath: path)
         if let pathComponent = url.appendingPathComponent("transfer.txt") {
@@ -48,21 +63,25 @@ class SecondVCViewController: UIViewController {
         }
         
         if (currentPlace[1].components(separatedBy: ":")[0] == "f") {
+            print("Back Check")
             print(currentPlace)
-            print(cardcount)
+            //print(cardcount)
            
            content = load(fileName: currentPlace[1].components(separatedBy: ":")[1])
-             print(content[cardcount].components(separatedBy: ":"))
            cardcount = Int(currentPlace[1].components(separatedBy: ":")[2])! + 1
+            print(content[cardcount].components(separatedBy: ":"))
+            save(fileName: "transfer", writeString: "")
             if cardcount > content.count-1{
                 cardcount = 1
-            }
-            print(cardcount)
+                
+            }else{
+            //print(cardcount)
             let side = content[cardcount].components(separatedBy: ":")[0]
             if side == "ul" || side == "ol"{
                 ViewList.sendActions(for: .touchUpInside)
             }
-            self.CurrentSide.text = side
+                self.CurrentSide.text = side
+            }
             Module.text = currentPlace[1].components(separatedBy: ":")[1]
             ModuleLabel.isHidden = true;
             Module.isHidden = true;
@@ -75,8 +94,6 @@ class SecondVCViewController: UIViewController {
             Flip.isHidden = false;
             Check.isHidden = false;
             Next.isHidden = false;
-            cardcount = cardcount - 1
-            Next.sendActions(for: .touchUpInside)
         }else{
             CurrentSide.isHidden = true;
             Answer.isHidden = true;
@@ -156,32 +173,44 @@ class SecondVCViewController: UIViewController {
         backgroundImageView.image = backgroundImage
         backgroundImageView.contentMode = .scaleAspectFill
         backgroundImageView.alpha = 0.5
-        
         self.view.insertSubview(backgroundImageView, at: 0)
-        Load.addTarget(self, action: #selector(ViewController.buttonClicked(_:)), for: .touchUpInside)
-        Flip.addTarget(self, action: #selector(ViewController.buttonClicked(_:)), for: .touchUpInside)
-        Next.addTarget(self, action: #selector(ViewController.buttonClicked(_:)), for: .touchUpInside)
-        Check.addTarget(self, action: #selector(ViewController.buttonClicked(_:)), for: .touchUpInside)
-        Quit.addTarget(self, action: #selector(ViewController.buttonClicked(_:)), for: .touchUpInside)
+        Load.addTarget(self, action: #selector(SecondVCViewController.buttonClicked(_:)), for: .touchUpInside)
+        Flip.addTarget(self, action: #selector(SecondVCViewController.buttonClicked(_:)), for: .touchUpInside)
+        Next.addTarget(self, action: #selector(SecondVCViewController.buttonClicked(_:)), for: .touchUpInside)
+        Check.addTarget(self, action: #selector(SecondVCViewController.buttonClicked(_:)), for: .touchUpInside)
+        Quit.addTarget(self, action: #selector(SecondVCViewController.buttonClicked(_:)), for: .touchUpInside)
+        //print(self.dataObject.count)
+        let picker = UIPickerView()
+        picker.delegate   = self
+        picker.dataSource = self
+        self.Module.inputView = picker
         // Do any additional setup after loading the view.
+    }
+    func numberOfComponents(in pickerView: UIPickerView) -> Int {
+        return 1
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int
+    {
+        return self.dataObject.count;
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String?
+    {
+        return self.dataObject[row];
+    }
+    
+    func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int)
+    {
+        self.Module.text = self.dataObject[row];
+        self.Module.endEditing(true)
     }
     
     func applicationWillTerminate(_ application: UIApplication){
         save(fileName: "transfer", writeString: "")
     }
     
-    
-    func isAppAlreadyLaunchedOnce()->Bool{
-        let defaults = UserDefaults.standard
-        if let _ = defaults.string(forKey: "isAppAlreadyLaunchedOnce"){
-            print("App already launched")
-            return true
-        }else{
-            defaults.set(true, forKey: "isAppAlreadyLaunchedOnce")
-            print("App launched first time")
-            return false
-        }
-    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         view.endEditing(true)
         
@@ -210,6 +239,7 @@ class SecondVCViewController: UIViewController {
             Check.isHidden = false;
             Next.isHidden = false;
         }else if sender === Flip{
+            save(fileName: "transfer", writeString: "")
             if sidecount == 0{
                 let side = content[cardcount].components(separatedBy: ":")[1]
                 self.SavedAnswer.text = side
@@ -223,27 +253,42 @@ class SecondVCViewController: UIViewController {
         }else if sender === Next{
             SavedAnswer.text = ""
             Answer.text = ""
+            print("Next")
             print(content[cardcount].components(separatedBy: ":").count)
-            if(content[cardcount].components(separatedBy: ":").count > 1){
-                cardcount = cardcount + 1
-                var pass = Module.text!
-                pass += ":"
-                pass += String(cardcount)
-                save(fileName: "transfer", writeString: pass)
-                ViewList.sendActions(for: .touchUpInside)
+            print(content[cardcount])
+            if(content.count-1 >= cardcount + 1){
+                if(content[cardcount+1].components(separatedBy: ":").count > 2){
+                    cardcount = cardcount + 1
+                    var pass = Module.text!
+                    pass += ":"
+                    pass += String(cardcount)
+                    save(fileName: "transfer", writeString: pass)
+                    ViewList.sendActions(for: .touchUpInside)
+                }else{
+                    print("Here")
+                    save(fileName: "transfer", writeString: "")
+                    if cardcount < content.count{
+                        cardcount = cardcount + 1
+                        let side = content[cardcount].components(separatedBy: ":")[0]
+                        sidecount = 0
+                        self.CurrentSide.text = side
+                    }else{
+                        cardcount = 1
+                        let side = content[cardcount].components(separatedBy: ":")[0]
+                        sidecount = 0
+                        self.CurrentSide.text = side
+                    }
+                }
             }
-            if cardcount < content.count-1{
-                cardcount = cardcount + 1
-                let side = content[cardcount].components(separatedBy: ":")[0]
-                sidecount = 0
-                self.CurrentSide.text = side
-            }else{
+            else{
                 cardcount = 1
                 let side = content[cardcount].components(separatedBy: ":")[0]
                 sidecount = 0
                 self.CurrentSide.text = side
             }
+
         }else if sender === Check{
+            save(fileName: "transfer", writeString: "")
             if self.Answer.text == content[cardcount].components(separatedBy: ":")[1]{
                 self.SavedAnswer.text = "Yay you got it :)!"
             }else{
@@ -265,7 +310,7 @@ class SecondVCViewController: UIViewController {
             let fileManager = FileManager.default
             if fileManager.fileExists(atPath: filePath) {
                 let readString = try! String(contentsOf: pathComponent, encoding: String.Encoding.utf8)
-                print(readString.components(separatedBy: .newlines))
+                //print(readString.components(separatedBy: .newlines))
                 return readString.components(separatedBy: .newlines)
             } else {
                 print("Failed to read file")
@@ -281,7 +326,7 @@ class SecondVCViewController: UIViewController {
         let file = fileName
         let DocumentDirURL = try! FileManager.default.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create:true)
         let fileURL = DocumentDirURL.appendingPathComponent(file).appendingPathExtension("txt")
-        print(fileURL)
+        //print(fileURL)
         var s = "\n"
         s+=writeString
         try! s.write(to: fileURL, atomically: false, encoding: String.Encoding.utf8)
